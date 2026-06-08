@@ -1,0 +1,2745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Design Primer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #111118;
+            --bg-sidebar: #0d0d14;
+            --bg-card: #16161e;
+            --bg-code: #1a1a24;
+            --bg-hover: #1e1e2a;
+            --bg-active: rgba(99, 102, 241, 0.12);
+            --text-primary: #e4e4ef;
+            --text-secondary: #8888a0;
+            --text-muted: #5a5a72;
+            --accent: #6366f1;
+            --accent-light: #818cf8;
+            --accent-dim: rgba(99, 102, 241, 0.3);
+            --green: #34d399;
+            --yellow: #fbbf24;
+            --red: #f87171;
+            --blue: #60a5fa;
+            --purple: #c084fc;
+            --border: #1e1e2e;
+            --border-light: #2a2a3a;
+            --sidebar-width: 280px;
+            --header-height: 60px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 80px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .header-logo-icon {
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .header-logo-text {
+            font-weight: 700;
+            font-size: 17px;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+
+        .header-logo-text span {
+            color: var(--accent-light);
+        }
+
+        .header-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-search {
+            position: relative;
+        }
+
+        .header-search input {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 7px 14px 7px 36px;
+            color: var(--text-primary);
+            font-size: 13px;
+            width: 220px;
+            outline: none;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .header-search input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+            width: 280px;
+        }
+
+        .header-search input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .header-search svg {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            z-index: 999;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--border-light);
+            border-radius: 4px;
+        }
+
+        .sidebar-nav {
+            padding: 16px 0;
+        }
+
+        .nav-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            padding: 16px 20px 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 450;
+            cursor: pointer;
+            transition: all 0.15s;
+            border-left: 2px solid transparent;
+            gap: 10px;
+        }
+
+        .nav-item:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .nav-item.active {
+            color: var(--accent-light);
+            background: var(--bg-active);
+            border-left-color: var(--accent);
+        }
+
+        .nav-item .nav-icon {
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+
+        .nav-item .nav-arrow {
+            margin-left: auto;
+            transition: transform 0.2s;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .nav-item.expanded .nav-arrow {
+            transform: rotate(90deg);
+        }
+
+        .nav-children {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .nav-children.open {
+            max-height: 600px;
+        }
+
+        .nav-child {
+            display: block;
+            padding: 6px 20px 6px 50px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 12.5px;
+            transition: all 0.15s;
+            border-left: 2px solid transparent;
+        }
+
+        .nav-child:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .nav-child.active {
+            color: var(--accent-light);
+            border-left-color: var(--accent);
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        .content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 40px 100px;
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            text-align: center;
+            padding: 60px 0 48px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 48px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--accent-light);
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -1px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #e4e4ef 0%, #6366f1 50%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 17px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 32px;
+        }
+
+        .hero-stat {
+            text-align: center;
+        }
+
+        .hero-stat-num {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent-light);
+        }
+
+        .hero-stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* ===== SECTIONS ===== */
+        .section {
+            margin-bottom: 56px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .section-icon.purple { background: rgba(192, 132, 252, 0.15); }
+        .section-icon.blue { background: rgba(96, 165, 250, 0.15); }
+        .section-icon.green { background: rgba(52, 211, 153, 0.15); }
+        .section-icon.yellow { background: rgba(251, 191, 36, 0.15); }
+        .section-icon.red { background: rgba(248, 113, 113, 0.15); }
+        .section-icon.indigo { background: rgba(99, 102, 241, 0.15); }
+
+        .section h2 {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+        }
+
+        .section h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 32px 0 14px;
+            padding-top: 16px;
+        }
+
+        .section h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 24px 0 10px;
+        }
+
+        .section p {
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+            font-size: 15px;
+        }
+
+        .section ul, .section ol {
+            color: var(--text-secondary);
+            margin: 10px 0 14px 20px;
+            font-size: 15px;
+        }
+
+        .section li {
+            margin-bottom: 6px;
+        }
+
+        .section strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* ===== CALLOUT ===== */
+        .callout {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin: 20px 0;
+        }
+
+        .callout-tip {
+            border-left: 3px solid var(--green);
+            background: rgba(52, 211, 153, 0.05);
+        }
+
+        .callout-warning {
+            border-left: 3px solid var(--yellow);
+            background: rgba(251, 191, 36, 0.05);
+        }
+
+        .callout-info {
+            border-left: 3px solid var(--blue);
+            background: rgba(96, 165, 250, 0.05);
+        }
+
+        .callout-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .callout p {
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+
+        /* ===== CODE ===== */
+        pre {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px 22px;
+            margin: 14px 0;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.65;
+            color: var(--text-primary);
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 13px;
+            color: var(--accent-light);
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .code-keyword { color: var(--purple); }
+        .code-string { color: var(--green); }
+        .code-comment { color: var(--text-muted); }
+        .code-func { color: var(--blue); }
+        .code-number { color: var(--yellow); }
+
+        /* ===== TABLE ===== */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 14px 0;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead {
+            background: var(--bg-card);
+        }
+
+        th {
+            padding: 12px 18px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 13px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 11px 18px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+            font-size: 13.5px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: var(--bg-hover);
+        }
+
+        /* ===== DIAGRAM ===== */
+        .diagram {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .diagram img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .diagram-caption {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 12px;
+        }
+
+        /* ===== COMPARISON CARDS ===== */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .comparison-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px;
+        }
+
+        .comparison-card h4 {
+            margin: 0 0 10px;
+            font-size: 15px;
+        }
+
+        .comparison-card p {
+            font-size: 13.5px;
+            margin-bottom: 0;
+        }
+
+        .comparison-card.vs {
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--accent-light);
+        }
+
+        /* ===== PILL TAGS ===== */
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .pill-green { background: rgba(52, 211, 153, 0.15); color: var(--green); }
+        .pill-yellow { background: rgba(251, 191, 36, 0.15); color: var(--yellow); }
+        .pill-red { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+        .pill-blue { background: rgba(96, 165, 250, 0.15); color: var(--blue); }
+        .pill-purple { background: rgba(192, 132, 252, 0.15); color: var(--purple); }
+
+        /* ===== PROSE LIST ===== */
+        .prose-list {
+            list-style: none;
+            margin: 12px 0;
+            padding: 0;
+        }
+
+        .prose-list li {
+            padding: 8px 0 8px 24px;
+            position: relative;
+            color: var(--text-secondary);
+            font-size: 14.5px;
+        }
+
+        .prose-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 16px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            opacity: 0.6;
+        }
+
+        .prose-list li strong {
+            color: var(--text-primary);
+        }
+
+        /* ===== SOURCE LINKS ===== */
+        .sources {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin: 20px 0;
+        }
+
+        .sources-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+        }
+
+        .sources a {
+            display: block;
+            color: var(--accent-light);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 3px 0;
+        }
+
+        .sources a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== AVAILABILITY TABLE ===== */
+        .avail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin: 16px 0;
+        }
+
+        .avail-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .avail-card .num {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent-light);
+        }
+
+        .avail-card .label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .avail-card .detail {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            text-align: center;
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: var(--accent-light);
+            text-decoration: none;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 900px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .content {
+                padding: 32px 20px 80px;
+            }
+
+            .hero h1 {
+                font-size: 30px;
+            }
+
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-search input {
+                width: 160px;
+            }
+
+            .header-search input:focus {
+                width: 200px;
+            }
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-light);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* ===== OVERLAY ===== */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 998;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Menu">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <a href="#" class="header-logo">
+            <div class="header-logo-icon">🏗️</div>
+            <div class="header-logo-text">System<span>Design</span></div>
+        </a>
+        <div class="header-right">
+            <div class="header-search">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><path d="m12 12 3 3"/></svg>
+                <input type="text" placeholder="Search topics..." id="searchInput" oninput="handleSearch(this.value)">
+            </div>
+        </div>
+    </header>
+
+    <!-- SIDEBAR OVERLAY (mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Fundamentals</div>
+            <a class="nav-item" data-target="performance-vs-scalability" onclick="navClick(this)">
+                <span class="nav-icon">⚡</span> Performance vs Scalability
+            </a>
+            <a class="nav-item" data-target="latency-vs-throughput" onclick="navClick(this)">
+                <span class="nav-icon">📊</span> Latency vs Throughput
+            </a>
+            <div class="nav-item" data-toggle="cap-children" onclick="toggleNav(this)">
+                <span class="nav-icon">🔒</span> Availability vs Consistency
+                <span class="nav-arrow">▶</span>
+            </div>
+            <div class="nav-children" id="cap-children">
+                <a class="nav-child" data-target="cap-theorem" onclick="navClick(this)">CAP Theorem</a>
+                <a class="nav-child" data-target="cp-ap" onclick="navClick(this)">CP vs AP</a>
+            </div>
+            <div class="nav-item" data-toggle="consistency-children" onclick="toggleNav(this)">
+                <span class="nav-icon">🔄</span> Consistency Patterns
+                <span class="nav-arrow">▶</span>
+            </div>
+            <div class="nav-children" id="consistency-children">
+                <a class="nav-child" data-target="weak-consistency" onclick="navClick(this)">Weak</a>
+                <a class="nav-child" data-target="eventual-consistency" onclick="navClick(this)">Eventual</a>
+                <a class="nav-child" data-target="strong-consistency" onclick="navClick(this)">Strong</a>
+            </div>
+            <div class="nav-item" data-toggle="availability-children" onclick="toggleNav(this)">
+                <span class="nav-icon">🛡️</span> Availability Patterns
+                <span class="nav-arrow">▶</span>
+            </div>
+            <div class="nav-children" id="availability-children">
+                <a class="nav-child" data-target="fail-over" onclick="navClick(this)">Fail-over</a>
+                <a class="nav-child" data-target="replication" onclick="navClick(this)">Replication</a>
+                <a class="nav-child" data-target="availability-numbers" onclick="navClick(this)">Availability in Numbers</a>
+            </div>
+
+            <div class="nav-section-title">Infrastructure</div>
+            <a class="nav-item" data-target="dns" onclick="navClick(this)">
+                <span class="nav-icon">🌐</span> Domain Name System
+            </a>
+            <a class="nav-item" data-target="cdn" onclick="navClick(this)">
+                <span class="nav-icon">🌍</span> Content Delivery Network
+            </a>
+            <div class="nav-item" data-toggle="lb-children" onclick="toggleNav(this)">
+                <span class="nav-icon">⚖️</span> Load Balancer
+                <span class="nav-arrow">▶</span>
+            </div>
+            <div class="nav-children" id="lb-children">
+                <a class="nav-child" data-target="active-passive" onclick="navClick(this)">Active-Passive</a>
+                <a class="nav-child" data-target="active-active" onclick="navClick(this)">Active-Active</a>
+                <a class="nav-child" data-target="layer4-layer7" onclick="navClick(this)">Layer 4 vs Layer 7</a>
+                <a class="nav-child" data-target="lb-algorithms" onclick="navClick(this)">LB Algorithms</a>
+                <a class="nav-child" data-target="horizontal-scaling" onclick="navClick(this)">Horizontal Scaling</a>
+            </div>
+            <a class="nav-item" data-target="reverse-proxy" onclick="navClick(this)">
+                <span class="nav-icon">🔀</span> Reverse Proxy
+            </a>
+
+            <div class="nav-section-title">Architecture</div>
+            <a class="nav-item" data-target="stateless-stateful" onclick="navClick(this)">
+                <span class="nav-icon">🔁</span> Stateless vs Stateful
+            </a>
+            <div class="nav-item" data-toggle="app-children" onclick="toggleNav(this)">
+                <span class="nav-icon">🏗️</span> Application Layer
+                <span class="nav-arrow">▶</span>
+            </div>
+            <div class="nav-children" id="app-children">
+                <a class="nav-child" data-target="microservices" onclick="navClick(this)">Microservices</a>
+                <a class="nav-child" data-target="service-discovery" onclick="navClick(this)">Service Discovery</a>
+                <a class="nav-child" data-target="consul" onclick="navClick(this)">Consul</a>
+            </div>
+            <div class="nav-item" data-toggle="db-children" onclick="toggleNav(this)">
+                <span class="nav-icon">🗄️</span> Database
+                <span class="nav-arrow">▶</span>
+            </div>
+            <div class="nav-children" id="db-children">
+                <a class="nav-child" data-target="rdbms" onclick="navClick(this)">RDBMS</a>
+                <a class="nav-child" data-target="db-keys" onclick="navClick(this)">Database Keys</a>
+                <a class="nav-child" data-target="master-slave" onclick="navClick(this)">Master-Slave Replication</a>
+                <a class="nav-child" data-target="master-master" onclick="navClick(this)">Master-Master Replication</a>
+                <a class="nav-child" data-target="federation" onclick="navClick(this)">Federation</a>
+                <a class="nav-child" data-target="partitioning" onclick="navClick(this)">Partitioning</a>
+                <a class="nav-child" data-target="sharding" onclick="navClick(this)">Sharding</a>
+                <a class="nav-child" data-target="denormalization" onclick="navClick(this)">Denormalization</a>
+                <a class="nav-child" data-target="sql-tuning" onclick="navClick(this)">SQL Tuning</a>
+                <a class="nav-child" data-target="pg-indexes" onclick="navClick(this)">PostgreSQL Indexes</a>
+                <a class="nav-child" data-target="nosql" onclick="navClick(this)">NoSQL</a>
+                <a class="nav-child" data-target="sql-or-nosql" onclick="navClick(this)">SQL or NoSQL</a>
+                <a class="nav-child" data-target="isolation-levels" onclick="navClick(this)">Isolation Levels</a>
+                <a class="nav-child" data-target="read-phenomena" onclick="navClick(this)">Read Phenomena</a>
+                <a class="nav-child" data-target="mvcc" onclick="navClick(this)">MVCC</a>
+                <a class="nav-child" data-target="connection-pooling" onclick="navClick(this)">Connection Pooling</a>
+            </div>
+
+            <div class="nav-section-title">Data & Caching</div>
+            <div class="nav-item" data-toggle="cache-children" onclick="toggleNav(this)">
+                <span class="nav-icon">💾</span> Cache
+                <span class="nav-arrow">▶</span>
+            </div>
+            <div class="nav-children" id="cache-children">
+                <a class="nav-child" data-target="cache-types" onclick="navClick(this)">Cache Types</a>
+                <a class="nav-child" data-target="cache-aside" onclick="navClick(this)">Cache-Aside</a>
+                <a class="nav-child" data-target="write-through" onclick="navClick(this)">Write-Through</a>
+                <a class="nav-child" data-target="write-behind" onclick="navClick(this)">Write-Behind</a>
+                <a class="nav-child" data-target="refresh-ahead" onclick="navClick(this)">Refresh-Ahead</a>
+            </div>
+
+            <div class="nav-section-title">Communication</div>
+            <div class="nav-item" data-toggle="async-children" onclick="toggleNav(this)">
+                <span class="nav-icon">⏳</span> Asynchronism
+                <span class="nav-arrow">▶</span>
+            </div>
+            <div class="nav-children" id="async-children">
+                <a class="nav-child" data-target="message-queues" onclick="navClick(this)">Message Queues</a>
+                <a class="nav-child" data-target="mqtt-vs-broker" onclick="navClick(this)">MQTT vs Message Broker</a>
+                <a class="nav-child" data-target="task-queues" onclick="navClick(this)">Task Queues</a>
+                <a class="nav-child" data-target="back-pressure" onclick="navClick(this)">Back Pressure</a>
+            </div>
+            <div class="nav-item" data-toggle="comm-children" onclick="toggleNav(this)">
+                <span class="nav-icon">📡</span> Communication
+                <span class="nav-arrow">▶</span>
+            </div>
+            <div class="nav-children" id="comm-children">
+                <a class="nav-child" data-target="osi-model" onclick="navClick(this)">OSI 7 Layers</a>
+                <a class="nav-child" data-target="tcp" onclick="navClick(this)">TCP</a>
+                <a class="nav-child" data-target="udp" onclick="navClick(this)">UDP</a>
+                <a class="nav-child" data-target="rpc" onclick="navClick(this)">RPC</a>
+                <a class="nav-child" data-target="rest" onclick="navClick(this)">REST</a>
+                <a class="nav-child" data-target="grpc-vs-websocket" onclick="navClick(this)">gRPC vs WebSocket</a>
+            </div>
+
+            <div class="nav-section-title">Concurrency</div>
+            <a class="nav-item" data-target="race-condition" onclick="navClick(this)">
+                <span class="nav-icon">🔒</span> Race Condition
+            </a>
+
+            <div class="nav-section-title">Principles</div>
+            <a class="nav-item" data-target="solid" onclick="navClick(this)">
+                <span class="nav-icon">📐</span> S.O.L.I.D
+            </a>
+            <a class="nav-item" data-target="design-patterns" onclick="navClick(this)">
+                <span class="nav-icon">🧩</span> Design Patterns
+            </a>
+
+            <div class="nav-section-title">Other</div>
+            <a class="nav-item" data-target="elk-stack" onclick="navClick(this)">
+                <span class="nav-icon">📊</span> ELK Stack
+            </a>
+            <a class="nav-item" data-target="security" onclick="navClick(this)">
+                <span class="nav-icon">🔐</span> Security
+            </a>
+            <a class="nav-item" data-target="system-design-interview" onclick="navClick(this)">
+                <span class="nav-icon">🎯</span> System Design Interview
+            </a>
+            <a class="nav-item" data-target="appendix" onclick="navClick(this)">
+                <span class="nav-icon">📋</span> Appendix
+            </a>
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <div class="content">
+
+            <!-- HERO -->
+            <div class="hero">
+                <div class="hero-badge">📖 Open Source Learning Resource</div>
+                <h1>The System Design Primer</h1>
+                <p>Learn how to design large-scale systems. Master the concepts, trade-offs, and patterns used by top engineers at the world's largest tech companies.</p>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <div class="hero-stat-num">15+</div>
+                        <div class="hero-stat-label">Core Topics</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-num">50+</div>
+                        <div class="hero-stat-label">Sub-topics</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-num">100%</div>
+                        <div class="hero-stat-label">Trade-offs</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== PERFORMANCE VS SCALABILITY ==================== -->
+            <section class="section" id="performance-vs-scalability">
+                <div class="section-header">
+                    <div class="section-icon yellow">⚡</div>
+                    <h2>Performance vs Scalability</h2>
+                </div>
+                <p>A service is <strong>scalable</strong> if it results in increased <strong>performance</strong> in a manner proportional to resources added. Generally, increasing performance means serving more units of work, but it can also be to handle larger units of work, such as when datasets grow.</p>
+
+                <div class="callout callout-tip">
+                    <div class="callout-title">💡 Quick Rule of Thumb</div>
+                    <p>If you have a <strong>performance</strong> problem, your system is slow for a single user.</p>
+                    <p>If you have a <strong>scalability</strong> problem, your system is fast for a single user but slow under heavy load.</p>
+                </div>
+
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4>🚀 Performance</h4>
+                        <p>System is slow even for a <strong>single user</strong>. You need to optimize the code, queries, or hardware.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h4>📈 Scalability</h4>
+                        <p>System is fast for one user but <strong>degrades under load</strong>. You need to distribute the work across more resources.</p>
+                    </div>
+                </div>
+
+                <div class="sources">
+                    <div class="sources-title">📚 Sources & Further Reading</div>
+                    <a href="http://www.allthingsdistributed.com/2006/03/a_word_on_scalability.html" target="_blank">A word on scalability</a>
+                    <a href="http://www.slideshare.net/jboner/scalability-availability-stability-patterns/" target="_blank">Scalability, availability, stability, patterns</a>
+                </div>
+            </section>
+
+            <!-- ==================== LATENCY VS THROUGHPUT ==================== -->
+            <section class="section" id="latency-vs-throughput">
+                <div class="section-header">
+                    <div class="section-icon blue">📊</div>
+                    <h2>Latency vs Throughput</h2>
+                </div>
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4>⏱️ Latency</h4>
+                        <p>The time to perform some action or to produce some result.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h4>📦 Throughput</h4>
+                        <p>The number of such actions or results per unit of time.</p>
+                    </div>
+                </div>
+
+                <div class="callout callout-info">
+                    <div class="callout-title">🎯 Goal</div>
+                    <p>Generally, you should aim for <strong>maximal throughput</strong> with <strong>acceptable latency</strong>.</p>
+                </div>
+
+                <div class="sources">
+                    <div class="sources-title">📚 Sources & Further Reading</div>
+                    <a href="https://community.cadence.com/cadence_blogs_8/b/fv/posts/understanding-latency-vs-throughput" target="_blank">Understanding latency vs throughput</a>
+                </div>
+            </section>
+
+            <!-- ==================== AVAILABILITY VS CONSISTENCY ==================== -->
+            <section class="section" id="cap-theorem">
+                <div class="section-header">
+                    <div class="section-icon purple">🔒</div>
+                    <h2>Availability vs Consistency</h2>
+                </div>
+
+                <h3>CAP Theorem</h3>
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/bgLMI2u.png" alt="CAP Theorem" loading="lazy">
+                    <div class="diagram-caption">Source: CAP theorem revisited</div>
+                </div>
+
+                <p>In a distributed computer system, you can only support <strong>two</strong> of the following guarantees:</p>
+
+                <ul class="prose-list">
+                    <li><strong>Consistency</strong> — Every read receives the most recent write or an error</li>
+                    <li><strong>Availability</strong> — Every request receives a response, without guarantee that it contains the most recent version</li>
+                    <li><strong>Partition Tolerance</strong> — The system continues to operate despite arbitrary partitioning due to network failures</li>
+                </ul>
+
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Key Insight</div>
+                    <p>Networks aren't reliable, so you'll need to support partition tolerance. You'll need to make a <strong>software tradeoff</strong> between consistency and availability.</p>
+                </div>
+
+                <h3 id="cp-ap">CP vs AP</h3>
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-green">CP</span> Consistency + Partition Tolerance</h4>
+                        <p>Waiting for a response from the partitioned node might result in a timeout error. CP is a good choice if your business needs require <strong>atomic reads and writes</strong>.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-yellow">AP</span> Availability + Partition Tolerance</h4>
+                        <p>Responses return the most readily available version of the data, which might not be the latest. AP is a good choice if the business needs allow for <strong>eventual consistency</strong>.</p>
+                    </div>
+                </div>
+
+                <div class="sources">
+                    <div class="sources-title">📚 Sources & Further Reading</div>
+                    <a href="https://robertgreiner.com/cap-theorem-revisited/" target="_blank">CAP theorem revisited</a>
+                    <a href="http://ksat.me/a-plain-english-introduction-to-cap-theorem" target="_blank">A plain english introduction to CAP theorem</a>
+                    <a href="https://www.youtube.com/watch?v=k-Yaq8AHlFA" target="_blank">The CAP theorem (video)</a>
+                </div>
+            </section>
+
+            <!-- ==================== CONSISTENCY PATTERNS ==================== -->
+            <section class="section" id="weak-consistency">
+                <div class="section-header">
+                    <div class="section-icon green">🔄</div>
+                    <h2>Consistency Patterns</h2>
+                </div>
+                <p>With multiple copies of the same data, we are faced with options on how to synchronize them so clients have a consistent view of the data.</p>
+
+                <h3>Weak Consistency</h3>
+                <p>After a write, reads may or may not see it. A best effort approach is taken.</p>
+                <p>This approach is seen in systems such as <strong>memcached</strong>. Weak consistency works well in real time use cases such as <strong>VoIP, video chat, and realtime multiplayer games</strong>.</p>
+
+                <h3 id="eventual-consistency">Eventual Consistency</h3>
+                <p>After a write, reads will <strong>eventually</strong> see it (typically within milliseconds). Data is replicated asynchronously.</p>
+                <p>This approach is seen in systems such as <strong>DNS and email</strong>. Eventual consistency works well in highly available systems.</p>
+
+                <h3 id="strong-consistency">Strong Consistency</h3>
+                <p>After a write, reads <strong>will</strong> see it. Data is replicated synchronously.</p>
+                <p>This approach is seen in <strong>file systems and RDBMSes</strong>. Strong consistency works well in systems that need transactions.</p>
+
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-red">Weak</span></h4>
+                        <p>Best effort. Good for VoIP, games.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-yellow">Eventual</span></h4>
+                        <p>Reads catch up eventually. Good for DNS, email.</p>
+                    </div>
+                </div>
+                <div class="comparison-grid" style="max-width:50%">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-green">Strong</span></h4>
+                        <p>Immediate consistency. Good for file systems, RDBMS.</p>
+                    </div>
+                </div>
+
+                <div class="sources">
+                    <div class="sources-title">📚 Sources & Further Reading</div>
+                    <a href="http://snarfed.org/transactions_across_datacenters_io.html" target="_blank">Transactions across data centers</a>
+                </div>
+            </section>
+
+            <!-- ==================== AVAILABILITY PATTERNS ==================== -->
+            <section class="section" id="fail-over">
+                <div class="section-header">
+                    <div class="section-icon red">🛡️</div>
+                    <h2>Availability Patterns</h2>
+                </div>
+                <p>There are two complementary patterns to support high availability: <strong>fail-over</strong> and <strong>replication</strong>.</p>
+
+                <h3>Fail-over</h3>
+
+                <h4>Active-passive</h4>
+                <p>With active-passive fail-over, heartbeats are sent between the active and the passive server on standby. If the heartbeat is interrupted, the passive server takes over the active's IP address and resumes service.</p>
+                <p>The length of downtime is determined by whether the passive server is already running in 'hot' standby or whether it needs to start up from 'cold' standby. Only the active server handles traffic.</p>
+
+                <h4>Active-active</h4>
+                <p>In active-active, both servers are managing traffic, spreading the load between them. If the servers are public-facing, the DNS would need to know about the public IPs of both servers.</p>
+
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Disadvantages of Fail-over</div>
+                    <ul>
+                        <li>Fail-over adds more hardware and additional complexity</li>
+                        <li>Potential for loss of data if the active system fails before newly written data can be replicated</li>
+                    </ul>
+                </div>
+
+                <h4>Fail-over Types</h4>
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-blue">Cold</span></h4>
+                        <p>Secondary is <strong>not running</strong> until fail-over. Longer downtime but simpler.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-yellow">Warm</span></h4>
+                        <p>Secondary is <strong>partially active</strong> — can take over quickly after failure.</p>
+                    </div>
+                </div>
+                <div class="comparison-grid" style="max-width:50%">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-green">Hot</span></h4>
+                        <p>Fully active and synchronized — <strong>near-instantaneous</strong> fail-over with minimal downtime.</p>
+                    </div>
+                </div>
+
+                <h3 id="replication">Replication</h3>
+                <p>Discussed further in the <a href="#master-slave" style="color: var(--accent-light)">Database section</a> — Master-slave and Master-master replication.</p>
+
+                <h3 id="availability-numbers">Availability in Numbers</h3>
+                <p>Availability is often quantified by uptime as a percentage of time the service is available. Availability is generally measured in <strong>number of 9s</strong>.</p>
+
+                <div class="avail-grid">
+                    <div class="avail-card">
+                        <div class="num">99.9%</div>
+                        <div class="label">Three 9s</div>
+                        <div class="detail">~8h 45m downtime/year<br>~43m downtime/month</div>
+                    </div>
+                    <div class="avail-card">
+                        <div class="num">99.99%</div>
+                        <div class="label">Four 9s</div>
+                        <div class="detail">~52m downtime/year<br>~4m downtime/month</div>
+                    </div>
+                    <div class="avail-card">
+                        <div class="num">99.999%</div>
+                        <div class="label">Five 9s</div>
+                        <div class="detail">~5m downtime/year<br>~26s downtime/month</div>
+                    </div>
+                </div>
+
+                <h4>Availability in parallel vs in sequence</h4>
+                <p><strong>In sequence:</strong> Overall availability decreases when two components with availability &lt; 100% are in sequence:</p>
+<pre><code>Availability (Total) = Availability (Foo) * Availability (Bar)</code></pre>
+                <p>If both <code>Foo</code> and <code>Bar</code> each had 99.9% availability, their total availability in sequence would be <strong>99.8%</strong>.</p>
+
+                <p><strong>In parallel:</strong> Overall availability increases when two components with availability &lt; 100% are in parallel:</p>
+<pre><code>Availability (Total) = 1 - (1 - Availability (Foo)) * (1 - Availability (Bar))</code></pre>
+                <p>If both <code>Foo</code> and <code>Bar</code> each had 99.9% availability, their total availability in parallel would be <strong>99.9999%</strong>.</p>
+            </section>
+
+            <!-- ==================== DNS ==================== -->
+            <section class="section" id="dns">
+                <div class="section-header">
+                    <div class="section-icon blue">🌐</div>
+                    <h2>Domain Name System (DNS)</h2>
+                </div>
+
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/IOyLj4i.jpg" alt="DNS" loading="lazy">
+                    <div class="diagram-caption">Source: DNS security presentation</div>
+                </div>
+
+                <p>A Domain Name System (DNS) translates a domain name such as <code>www.example.com</code> to an IP address.</p>
+                <p>DNS is hierarchical, with a few authoritative servers at the top level. Lower level DNS servers cache mappings, which could become stale due to DNS propagation delays. DNS results can be cached by your browser or OS for a certain period of time, determined by the <strong>time to live (TTL)</strong>.</p>
+
+                <h3>DNS Record Types</h3>
+                <ul class="prose-list">
+                    <li><strong>NS record (name server)</strong> — Specifies the DNS servers for your domain/subdomain</li>
+                    <li><strong>MX record (mail exchange)</strong> — Specifies the mail servers for accepting messages</li>
+                    <li><strong>A record (address)</strong> — Points a name to an IP address</li>
+                    <li><strong>CNAME (canonical)</strong> — Points a name to another name or to an A record</li>
+                </ul>
+
+                <h3>DNS Routing Methods</h3>
+                <p>Services such as <strong>CloudFlare</strong> and <strong>Route 53</strong> provide managed DNS services. Some DNS services can route traffic through various methods:</p>
+                <ul class="prose-list">
+                    <li><strong>Weighted round robin</strong> — Balance between varying cluster sizes, A/B testing</li>
+                    <li><strong>Latency-based</strong> — Route to the lowest-latency endpoint</li>
+                    <li><strong>Geolocation-based</strong> — Route based on user location</li>
+                </ul>
+
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Disadvantages</div>
+                    <ul>
+                        <li>Accessing a DNS server introduces a slight delay (mitigated by caching)</li>
+                        <li>DNS server management is complex, generally managed by governments, ISPs, and large companies</li>
+                        <li>DNS services can be targets of DDoS attacks</li>
+                    </ul>
+                </div>
+
+                <div class="sources">
+                    <div class="sources-title">📚 Sources & Further Reading</div>
+                    <a href="https://technet.microsoft.com/en-us/library/dd197427(v=ws.10).aspx" target="_blank">DNS architecture</a>
+                    <a href="https://en.wikipedia.org/wiki/Domain_Name_System" target="_blank">Wikipedia</a>
+                    <a href="https://support.dnsimple.com/categories/dns/" target="_blank">DNS articles</a>
+                </div>
+            </section>
+
+            <!-- ==================== CDN ==================== -->
+            <section class="section" id="cdn">
+                <div class="section-header">
+                    <div class="section-icon green">🌍</div>
+                    <h2>Content Delivery Network (CDN)</h2>
+                </div>
+
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/h9TAuGI.jpg" alt="CDN" loading="lazy">
+                    <div class="diagram-caption">Source: Why use a CDN</div>
+                </div>
+
+                <p>A CDN is a globally distributed network of proxy servers, serving content from locations closer to the user. Generally, static files such as HTML/CSS/JS, photos, and videos are served from CDN, although some CDNs support dynamic content.</p>
+
+                <div class="callout callout-tip">
+                    <div class="callout-title">✅ Benefits</div>
+                    <ul>
+                        <li>Users receive content from data centers close to them</li>
+                        <li>Your servers do not have to serve requests that the CDN fulfills</li>
+                    </ul>
+                </div>
+
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4>📤 Push CDN</h4>
+                        <p>Receive new content whenever changes occur on your server. You take full responsibility for providing content, uploading directly to the CDN and rewriting URLs to point to the CDN.</p>
+                        <p style="margin-top:8px"><span class="pill pill-blue">Best for</span> Sites with a small amount of traffic or content that isn't often updated.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h4>📥 Pull CDN</h4>
+                        <p>Grab new content from your server when the first user requests the content. A TTL determines how long content is cached.</p>
+                        <p style="margin-top:8px"><span class="pill pill-green">Best for</span> Sites with heavy traffic, as traffic is spread out more evenly.</p>
+                    </div>
+                </div>
+
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Disadvantages</div>
+                    <ul>
+                        <li>CDN costs could be significant depending on traffic</li>
+                        <li>Content might be stale if it is updated before the TTL expires</li>
+                        <li>CDNs require changing URLs for static content to point to the CDN</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- ==================== LOAD BALANCER ==================== -->
+            <section class="section" id="active-passive">
+                <div class="section-header">
+                    <div class="section-icon indigo">⚖️</div>
+                    <h2>Load Balancer</h2>
+                </div>
+
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/h81n9iK.png" alt="Load Balancer" loading="lazy">
+                    <div class="diagram-caption">Source: Scalable system design patterns</div>
+                </div>
+
+                <p>Load balancers distribute incoming client requests to computing resources such as application servers and databases. In each case, the load balancer returns the response from the computing resource to the appropriate client.</p>
+
+                <p>Load balancers are effective at:</p>
+                <ul class="prose-list">
+                    <li>Preventing requests from going to unhealthy servers</li>
+                    <li>Preventing overloading resources</li>
+                    <li>Helping to eliminate a single point of failure</li>
+                </ul>
+
+                <h3>Additional Benefits</h3>
+                <ul class="prose-list">
+                    <li><strong>SSL termination</strong> — Decrypt incoming requests and encrypt server responses so backend servers don't have to</li>
+                    <li><strong>Session persistence</strong> — Issue cookies and route a specific client's requests to the same instance</li>
+                </ul>
+
+                <h3 id="layer4-layer7">Layer 4 vs Layer 7 Load Balancing</h3>
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-blue">Layer 4</span> Transport Layer</h4>
+                        <p>Looks at info at the transport layer to decide how to distribute requests. Involves source, destination IP addresses, and ports in the header, but <strong>not the contents</strong> of the packet. Forwards network packets to and from the upstream server.</p>
+                        <p style="margin-top:6px"><span class="pill pill-green">Faster</span> Requires less time and computing resources.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-purple">Layer 7</span> Application Layer</h4>
+                        <p>Looks at the application layer to decide how to distribute requests. Can involve contents of the header, message, and cookies. Terminates network traffic, reads the message, makes a load-balancing decision, then opens a connection.</p>
+                        <p style="margin-top:6px"><span class="pill pill-yellow">More Flexible</span> Can direct traffic based on content type.</p>
+                    </div>
+                </div>
+
+                <h3 id="horizontal-scaling">Horizontal Scaling</h3>
+                <p>Load balancers can also help with horizontal scaling, improving performance and availability. Scaling out using commodity machines is more cost efficient and results in higher availability than scaling up a single server on more expensive hardware (<strong>Vertical Scaling</strong>).</p>
+
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Disadvantages</div>
+                    <ul>
+                        <li>Scaling horizontally introduces complexity and involves cloning servers</li>
+                        <li>Servers should be <strong>stateless</strong>: they should not contain any user-related data like sessions or profile pictures</li>
+                        <li>Sessions can be stored in a centralized data store (database or persistent cache like Redis)</li>
+                        <li>Downstream servers need to handle more simultaneous connections as upstream servers scale out</li>
+                        <li>The load balancer itself can become a performance bottleneck</li>
+                        <li>A single load balancer is a single point of failure; configuring multiple increases complexity</li>
+                    </ul>
+                </div>
+
+                <div class="sources">
+                    <div class="sources-title">📚 Sources & Further Reading</div>
+                    <a href="https://www.nginx.com/blog/inside-nginx-how-we-designed-for-performance-scale/" target="_blank">NGINX architecture</a>
+                    <a href="https://www.nginx.com/resources/glossary/layer-4-load-balancing/" target="_blank">Layer 4 load balancing</a>
+                    <a href="https://www.nginx.com/resources/glossary/layer-7-load-balancing/" target="_blank">Layer 7 load balancing</a>
+                </div>
+            </section>
+
+            <!-- ==================== REVERSE PROXY ==================== -->
+            <section class="section" id="reverse-proxy">
+                <div class="section-header">
+                    <div class="section-icon purple">🔀</div>
+                    <h2>Reverse Proxy (Web Server)</h2>
+                </div>
+
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/n41Azff.png" alt="Reverse Proxy" loading="lazy">
+                    <div class="diagram-caption">Source: Wikipedia</div>
+                </div>
+
+                <p>A reverse proxy is a web server that centralizes internal services and provides unified interfaces to the public. Requests from clients are forwarded to a server that can fulfill it before the reverse proxy returns the server's response to the client.</p>
+
+                <h3>Additional Benefits</h3>
+                <ul class="prose-list">
+                    <li><strong>Increased security</strong> — Hide information about backend servers, blacklist IPs, limit connections per client</li>
+                    <li><strong>Increased scalability and flexibility</strong> — Clients only see the reverse proxy's IP, allowing you to scale servers freely</li>
+                    <li><strong>SSL termination</strong> — Decrypt incoming requests so backend servers don't have to</li>
+                    <li><strong>Compression</strong> — Compress server responses</li>
+                    <li><strong>Caching</strong> — Return the response for cached requests</li>
+                    <li><strong>Static content</strong> — Serve static content directly (HTML, CSS, JS, images, videos)</li>
+                </ul>
+
+                <h3>Load Balancer vs Reverse Proxy</h3>
+                <ul class="prose-list">
+                    <li>Deploying a <strong>load balancer</strong> is useful when you have <strong>multiple servers</strong></li>
+                    <li>A <strong>reverse proxy</strong> can be useful even with just <strong>one web server</strong></li>
+                    <li>Solutions such as <strong>NGINX</strong> and <strong>HAProxy</strong> can support both layer 7 reverse proxying and load balancing</li>
+                </ul>
+
+                <div class="sources">
+                    <div class="sources-title">📚 Sources & Further Reading</div>
+                    <a href="https://www.nginx.com/resources/glossary/reverse-proxy-vs-load-balancer/" target="_blank">Reverse proxy vs load balancer</a>
+                    <a href="https://en.wikipedia.org/wiki/Reverse_proxy" target="_blank">Wikipedia</a>
+                </div>
+            </section>
+
+            <!-- ==================== APPLICATION LAYER ==================== -->
+            <section class="section" id="microservices">
+                <div class="section-header">
+                    <div class="section-icon yellow">🏗️</div>
+                    <h2>Application Layer</h2>
+                </div>
+
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/yB5SYwm.png" alt="Application Layer" loading="lazy">
+                    <div class="diagram-caption">Source: Intro to architecting systems for scale</div>
+                </div>
+
+                <p>Separating out the web layer from the application layer allows you to scale and configure both layers independently. The <strong>single responsibility principle</strong> advocates for small and autonomous services that work together.</p>
+
+                <h3>Microservices</h3>
+                <p>Microservices can be described as a suite of independently deployable, small, modular services. Each service runs a unique process and communicates through a well-defined, lightweight mechanism to serve a business goal.</p>
+                <p>Pinterest, for example, could have the following microservices: user profile, follower, feed, search, photo upload, etc.</p>
+
+                <h3 id="service-discovery">Service Discovery</h3>
+                <p>Systems such as <strong>Consul</strong>, <strong>Etcd</strong>, and <strong>Zookeeper</strong> can help services find each other by keeping track of registered names, addresses, and ports. Health checks help verify service integrity and are often done using an HTTP endpoint.</p>
+
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Disadvantages</div>
+                    <ul>
+                        <li>Adding an application layer with loosely coupled services requires a different approach from an architectural, operations, and process viewpoint</li>
+                        <li>Microservices can add complexity in terms of deployments and operations</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- ==================== DATABASE ==================== -->
+            <section class="section" id="rdbms">
+                <div class="section-header">
+                    <div class="section-icon green">🗄️</div>
+                    <h2>Database</h2>
+                </div>
+
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/Xkm5CXz.png" alt="Database Scaling" loading="lazy">
+                    <div class="diagram-caption">Source: Scaling up to your first 10 million users</div>
+                </div>
+
+                <h3>Relational Database Management System (RDBMS)</h3>
+                <p>A relational database like SQL is a collection of data items organized in tables.</p>
+
+                <div class="callout callout-info">
+                    <div class="callout-title">💡 ACID Properties</div>
+                    <ul>
+                        <li><strong>Atomicity</strong> — Each transaction is all or nothing</li>
+                        <li><strong>Consistency</strong> — Any transaction will bring the database from one valid state to another</li>
+                        <li><strong>Isolation</strong> — Executing transactions concurrently has the same results as if executed serially</li>
+                        <li><strong>Durability</strong> — Once a transaction has been committed, it will remain so</li>
+                    </ul>
+                </div>
+
+                <p>There are many techniques to scale a relational database: <strong>master-slave replication</strong>, <strong>master-master replication</strong>, <strong>federation</strong>, <strong>sharding</strong>, <strong>denormalization</strong>, and <strong>SQL tuning</strong>.</p>
+
+                <h3 id="master-slave">Master-Slave Replication</h3>
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/C9ioGtn.png" alt="Master-Slave" loading="lazy">
+                    <div class="diagram-caption">Source: Scalability, availability, stability, patterns</div>
+                </div>
+                <p>The master serves reads and writes, replicating writes to one or more slaves, which serve only reads. If the master goes offline, the system can continue to operate in read-only mode until a slave is promoted to a master.</p>
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Disadvantages</div>
+                    <ul>
+                        <li>Additional logic is needed to promote a slave to a master</li>
+                        <li>Potential for loss of data if the master fails before newly written data can be replicated</li>
+                        <li>More read slaves = more replication lag</li>
+                    </ul>
+                </div>
+
+                <h3 id="master-master">Master-Master Replication</h3>
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/krAHLGg.png" alt="Master-Master" loading="lazy">
+                    <div class="diagram-caption">Source: Scalability, availability, stability, patterns</div>
+                </div>
+                <p>Both masters serve reads and writes and coordinate with each other on writes. If either master goes down, the system can continue to operate with both reads and writes.</p>
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Disadvantages</div>
+                    <ul>
+                        <li>You'll need a load balancer or change application logic to determine where to write</li>
+                        <li>Most master-master systems are either loosely consistent or have increased write latency</li>
+                        <li>Conflict resolution becomes more complex as more write nodes are added</li>
+                    </ul>
+                </div>
+
+                <h3 id="federation">Federation</h3>
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/U3qV33e.png" alt="Federation" loading="lazy">
+                    <div class="diagram-caption">Source: Scaling up to your first 10 million users</div>
+                </div>
+                <p>Federation (or functional partitioning) splits up databases by function. For example, instead of a single, monolithic database, you could have three databases: <strong>forums</strong>, <strong>users</strong>, and <strong>products</strong>, resulting in less read and write traffic to each database.</p>
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Disadvantages</div>
+                    <ul>
+                        <li>Not effective if your schema requires huge functions or tables</li>
+                        <li>You'll need to update application logic to determine which database to read and write</li>
+                        <li>Joining data from two databases is more complex</li>
+                    </ul>
+                </div>
+
+                <h3 id="sharding">Sharding</h3>
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/wU8x5Id.png" alt="Sharding" loading="lazy">
+                    <div class="diagram-caption">Source: Scalability, availability, stability, patterns</div>
+                </div>
+                <p>Sharding distributes data across different databases such that each database can only manage a subset of the data. As the number of users increases, more shards are added to the cluster.</p>
+                <p>Common ways to shard a table of users is either through the user's <strong>last name initial</strong> or the user's <strong>geographic location</strong>.</p>
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Disadvantages</div>
+                    <ul>
+                        <li>You'll need to update application logic, resulting in complex SQL queries</li>
+                        <li>Data distribution can become lopsided (e.g., power users on one shard)</li>
+                        <li>Rebalancing adds additional complexity</li>
+                        <li>Joining data from multiple shards is complex</li>
+                    </ul>
+                </div>
+
+                <h3 id="denormalization">Denormalization</h3>
+                <p>Denormalization attempts to improve <strong>read performance</strong> at the expense of some write performance. Redundant copies of the data are written in multiple tables to avoid expensive joins.</p>
+                <p>In most systems, reads can heavily outnumber writes <strong>100:1</strong> or even <strong>1000:1</strong>. A read resulting in a complex join can be very expensive.</p>
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Disadvantages</div>
+                    <ul>
+                        <li>Data is duplicated</li>
+                        <li>Constraints can help redundant copies stay in sync, increasing complexity</li>
+                        <li>Under heavy write load, might perform worse than normalized counterpart</li>
+                    </ul>
+                </div>
+
+                <h3 id="sql-tuning">SQL Tuning</h3>
+                <p>It's important to <strong>benchmark</strong> and <strong>profile</strong> to simulate and uncover bottlenecks.</p>
+                <ul class="prose-list">
+                    <li><strong>Tighten up the schema</strong> — Use <code>CHAR</code> instead of <code>VARCHAR</code> for fixed-length fields, <code>TEXT</code> for large blocks, <code>DECIMAL</code> for currency</li>
+                    <li><strong>Use good indices</strong> — Columns that you query (SELECT, GROUP BY, ORDER BY, JOIN) could be faster with indices</li>
+                    <li><strong>Avoid expensive joins</strong> — Denormalize where performance demands it</li>
+                    <li><strong>Partition tables</strong> — Break up a table by putting hot spots in a separate table</li>
+                    <li><strong>Tune the query cache</strong> — In some cases, the query cache could lead to performance issues</li>
+                </ul>
+
+                <h3 id="nosql">NoSQL</h3>
+                <p>NoSQL is a collection of data items represented in a <strong>key-value store</strong>, <strong>document store</strong>, <strong>wide column store</strong>, or a <strong>graph database</strong>. Data is denormalized, and joins are generally done in the application code.</p>
+
+                <div class="callout callout-info">
+                    <div class="callout-title">💡 BASE Properties</div>
+                    <ul>
+                        <li><strong>Basically available</strong> — the system guarantees availability</li>
+                        <li><strong>Soft state</strong> — the state may change over time, even without input</li>
+                        <li><strong>Eventual consistency</strong> — the system will become consistent over time</li>
+                    </ul>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr><th>Type</th><th>Abstraction</th><th>Examples</th><th>Best For</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>Key-value</strong></td><td>Hash table</td><td>Redis, Memcached</td><td>Simple data, caching, fast lookups</td></tr>
+                            <tr><td><strong>Document</strong></td><td>Key-value with documents</td><td>MongoDB, CouchDB</td><td>Flexible schema, occasionally changing data</td></tr>
+                            <tr><td><strong>Wide column</strong></td><td>Nested map</td><td>Cassandra, HBase, Bigtable</td><td>Very large data sets, high availability</td></tr>
+                            <tr><td><strong>Graph</strong></td><td>Graph</td><td>Neo4j, FlockDB</td><td>Complex relationships (social networks)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 id="sql-or-nosql">SQL or NoSQL?</h3>
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/wXGqG5f.png" alt="SQL vs NoSQL" loading="lazy">
+                    <div class="diagram-caption">Source: Transitioning from RDBMS to NoSQL</div>
+                </div>
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-green">Choose SQL</span></h4>
+                        <ul>
+                            <li>Structured data with strict schema</li>
+                            <li>Relational data, complex joins</li>
+                            <li>Transactions required</li>
+                            <li>Clear patterns for scaling</li>
+                            <li>Lookups by index are very fast</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-purple">Choose NoSQL</span></h4>
+                        <ul>
+                            <li>Semi-structured, dynamic schema</li>
+                            <li>Non-relational data</li>
+                            <li>Store TB/PB of data</li>
+                            <li>Very high throughput (IOPS)</li>
+                            <li>Data-intensive workload</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== CACHE ==================== -->
+            <section class="section" id="cache-types">
+                <div class="section-header">
+                    <div class="section-icon purple">💾</div>
+                    <h2>Cache</h2>
+                </div>
+
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/Q6z24La.png" alt="Cache" loading="lazy">
+                    <div class="diagram-caption">Source: Scalable system design patterns</div>
+                </div>
+
+                <p>Caching improves page load times and can reduce the load on your servers and databases. Popular items can skew the distribution, causing bottlenecks. Putting a cache in front of a database can help absorb uneven loads and spikes in traffic.</p>
+
+                <h3>Types of Caching</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Cache Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Client caching</strong></td><td>Located on the client side (OS or browser)</td></tr>
+                            <tr><td><strong>CDN caching</strong></td><td>CDNs are considered a type of cache</td></tr>
+                            <tr><td><strong>Web server caching</strong></td><td>Reverse proxies and caches (Varnish) can serve static and dynamic content directly</td></tr>
+                            <tr><td><strong>Database caching</strong></td><td>Database usually includes some level of caching in default config</td></tr>
+                            <tr><td><strong>Application caching</strong></td><td>In-memory caches (Memcached, Redis) between your application and data storage</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Caching Levels</h3>
+                <p>There are multiple levels you can cache that fall into two general categories: <strong>database queries</strong> and <strong>objects</strong>:</p>
+                <ul class="prose-list">
+                    <li><strong>Row level</strong></li>
+                    <li><strong>Query-level</strong> — Hash the query as a key and store the result</li>
+                    <li><strong>Fully-formed serializable objects</strong></li>
+                    <li><strong>Fully-rendered HTML</strong></li>
+                </ul>
+
+                <h3 id="cache-aside">Cache-Aside</h3>
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/ONjORqk.png" alt="Cache-Aside" loading="lazy">
+                    <div class="diagram-caption">Source: From cache to in-memory data grid</div>
+                </div>
+                <p>The application is responsible for reading and writing from storage. The cache does not interact with storage directly.</p>
+<pre><code><span class="code-keyword">def</span> <span class="code-func">get_user</span>(self, user_id):
+    user = cache.<span class="code-func">get</span>(<span class="code-string">"user.{0}"</span>, user_id)
+    <span class="code-keyword">if</span> user <span class="code-keyword">is</span> <span class="code-keyword">None</span>:
+        user = db.<span class="code-func">query</span>(<span class="code-string">"SELECT * FROM users WHERE id = {0}"</span>, user_id)
+        <span class="code-keyword">if</span> user <span class="code-keyword">is not</span> <span class="code-keyword">None</span>:
+            key = <span class="code-string">"user.{0}"</span>.<span class="code-func">format</span>(user_id)
+            cache.<span class="code-func">set</span>(key, json.<span class="code-func">dumps</span>(user))
+    <span class="code-keyword">return</span> user</code></pre>
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Disadvantages</div>
+                    <ul>
+                        <li>Each cache miss results in three trips, causing noticeable delay</li>
+                        <li>Data can become stale if updated in the database (mitigated by TTL)</li>
+                        <li>When a node fails, new empty node increases latency</li>
+                    </ul>
+                </div>
+
+                <h3 id="write-through">Write-Through</h3>
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/0vBc0hN.png" alt="Write-Through" loading="lazy">
+                    <div class="diagram-caption">Source: Scalability, availability, stability, patterns</div>
+                </div>
+                <p>The application uses the cache as the main data store, reading and writing data to it, while the cache is responsible for reading and writing to the database:</p>
+<pre><code><span class="code-keyword">def</span> <span class="code-func">set_user</span>(user_id, values):
+    user = db.<span class="code-func">query</span>(<span class="code-string">"UPDATE Users WHERE id = {0}"</span>, user_id, values)
+    cache.<span class="code-func">set</span>(user_id, user)</code></pre>
+                <p>Write-through is a slow overall operation due to the write operation, but subsequent reads of just written data are fast. Data in the cache is <strong>not stale</strong>.</p>
+
+                <h3 id="write-behind">Write-Behind (Write-Back)</h3>
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/rgSrvjG.png" alt="Write-Behind" loading="lazy">
+                    <div class="diagram-caption">Source: Scalability, availability, stability, patterns</div>
+                </div>
+                <p>The application adds/updates entry in cache and <strong>asynchronously</strong> writes entry to the data store, improving write performance.</p>
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Disadvantages</div>
+                    <ul>
+                        <li>Potential for data loss if the cache goes down before contents hit the data store</li>
+                        <li>More complex to implement than cache-aside or write-through</li>
+                    </ul>
+                </div>
+
+                <h3 id="refresh-ahead">Refresh-Ahead</h3>
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/kxtjqgE.png" alt="Refresh-Ahead" loading="lazy">
+                    <div class="diagram-caption">Source: From cache to in-memory data grid</div>
+                </div>
+                <p>You can configure the cache to automatically refresh any recently accessed cache entry <strong>prior to its expiration</strong>. Refresh-ahead can result in reduced latency if the cache can accurately predict which items are likely to be needed.</p>
+            </section>
+
+            <!-- ==================== ASYNCHRONISM ==================== -->
+            <section class="section" id="message-queues">
+                <div class="section-header">
+                    <div class="section-icon blue">⏳</div>
+                    <h2>Asynchronism</h2>
+                </div>
+
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/54GYsSx.png" alt="Asynchronism" loading="lazy">
+                    <div class="diagram-caption">Source: Intro to architecting systems for scale</div>
+                </div>
+
+                <p>Asynchronous workflows help reduce request times for expensive operations. They can also help by doing time-consuming work in advance, such as periodic aggregation of data.</p>
+
+                <h3>Message Queues</h3>
+                <p>Message queues receive, hold, and deliver messages. If an operation is too slow to perform inline:</p>
+                <ul class="prose-list">
+                    <li>An application publishes a job to the queue, then notifies the user of job status</li>
+                    <li>A worker picks up the job from the queue, processes it, then signals completion</li>
+                </ul>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Tool</th><th>Pros</th><th>Cons</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Redis</strong></td><td>Simple message broker</td><td>Messages can be lost</td></tr>
+                            <tr><td><strong>RabbitMQ</strong></td><td>Popular, AMQP protocol</td><td>Requires managing own nodes</td></tr>
+                            <tr><td><strong>Amazon SQS</strong></td><td>Hosted, managed</td><td>High latency, possible duplicate delivery</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 id="task-queues">Task Queues</h3>
+                <p>Tasks queues receive tasks and their related data, runs them, then delivers their results. They can support scheduling and can be used to run computationally-intensive jobs in the background. <strong>Celery</strong> has support for scheduling and primarily has Python support.</p>
+
+                <h3 id="back-pressure">Back Pressure</h3>
+                <p>If queues start to grow significantly, the queue size can become larger than memory, resulting in cache misses, disk reads, and even slower performance. <strong>Back pressure</strong> can help by limiting the queue size, thereby maintaining a high throughput rate and good response times.</p>
+                <p>Once the queue fills up, clients get a server busy or <strong>HTTP 503</strong> status code to try again later. Clients can retry with <strong>exponential backoff</strong>.</p>
+
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Disadvantages</div>
+                    <ul>
+                        <li>Inexpensive calculations and realtime workflows might be better suited for synchronous operations</li>
+                        <li>Introducing queues can add delays and complexity</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- ==================== COMMUNICATION ==================== -->
+            <section class="section" id="tcp">
+                <div class="section-header">
+                    <div class="section-icon green">📡</div>
+                    <h2>Communication</h2>
+                </div>
+
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/5KeocQs.jpg" alt="OSI Model" loading="lazy">
+                    <div class="diagram-caption">Source: OSI 7 layer model</div>
+                </div>
+
+                <h3 id="osi-model">OSI 7 Layers</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Layer</th><th>Name</th><th>What It Does</th><th>Examples</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>7</strong></td><td>Application</td><td>Network services closest to user</td><td>HTTP, FTP, DNS</td></tr>
+                            <tr><td><strong>6</strong></td><td>Presentation</td><td>Data format conversion, encryption</td><td>SSL/TLS, JPEG, MP3</td></tr>
+                            <tr><td><strong>5</strong></td><td>Session</td><td>Manages connections (start, maintain, end)</td><td>Keeps you logged in</td></tr>
+                            <tr><td><strong>4</strong></td><td>Transport</td><td>Breaks data into parts, ensures delivery</td><td>TCP (reliable), UDP (fast)</td></tr>
+                            <tr><td><strong>3</strong></td><td>Network</td><td>Best path routing</td><td>IP, routers</td></tr>
+                            <tr><td><strong>2</strong></td><td>Data Link</td><td>Data between devices on same network</td><td>Ethernet, Wi-Fi, MAC addresses</td></tr>
+                            <tr><td><strong>1</strong></td><td>Physical</td><td>Raw bits through cables/Wi-Fi</td><td>Cables, switches, radio</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Hypertext Transfer Protocol (HTTP)</h3>
+                <p>HTTP is a method for encoding and transporting data between a client and a server. It is a request/response protocol.</p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Verb</th><th>Description</th><th>Idempotent</th><th>Safe</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>GET</code></td><td>Reads a resource</td><td>✅</td><td>✅</td></tr>
+                            <tr><td><code>POST</code></td><td>Creates a resource or triggers a process</td><td>❌</td><td>❌</td></tr>
+                            <tr><td><code>PUT</code></td><td>Creates or replaces a resource</td><td>✅</td><td>❌</td></tr>
+                            <tr><td><code>PATCH</code></td><td>Partially updates a resource</td><td>❌</td><td>❌</td></tr>
+                            <tr><td><code>DELETE</code></td><td>Deletes a resource</td><td>✅</td><td>❌</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Transmission Control Protocol (TCP)</h3>
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/JdAsdvG.jpg" alt="TCP" loading="lazy">
+                    <div class="diagram-caption">Source: How to make a multiplayer game</div>
+                </div>
+                <p>TCP is a <strong>connection-oriented</strong> protocol over an IP network. Connection is established using a handshake. All packets sent are guaranteed to reach the destination in the original order and without corruption.</p>
+                <ul class="prose-list">
+                    <li>Sequence numbers and checksum fields for each packet</li>
+                    <li>Acknowledgement packets and automatic retransmission</li>
+                    <li>Implements flow control and congestion control</li>
+                </ul>
+                <p><span class="pill pill-blue">Use TCP when</span> You need all data to arrive intact and want automatic best use of network throughput.</p>
+
+                <h3 id="udp">User Datagram Protocol (UDP)</h3>
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/yzDrJtA.jpg" alt="UDP" loading="lazy">
+                    <div class="diagram-caption">Source: How to make a multiplayer game</div>
+                </div>
+                <p>UDP is <strong>connectionless</strong>. Datagrams might reach their destination out of order or not at all. UDP does not support congestion control, making it generally more efficient.</p>
+                <p><span class="pill pill-yellow">Use UDP when</span> You need the lowest latency, late data is worse than loss of data, or you want to implement your own error correction.</p>
+
+                <h3 id="rpc">Remote Procedure Call (RPC)</h3>
+                <div class="diagram">
+                    <img src="https://raw.githubusercontent.com/donnemartin/system-design-primer/master/images/iF4Mkb5.png" alt="RPC" loading="lazy">
+                    <div class="diagram-caption">Source: Crack the system design interview</div>
+                </div>
+                <p>In an RPC, a client causes a procedure to execute on a different address space. Popular RPC frameworks include <strong>Protobuf</strong>, <strong>Thrift</strong>, and <strong>Avro</strong>.</p>
+                <p>RPC is focused on <strong>exposing behaviors</strong>. RPCs are often used for performance reasons with internal communications.</p>
+<pre><code><span class="code-comment">// RPC calls</span>
+GET /someoperation?data=anId
+POST /anotheroperation
+{<span class="code-string">"data"</span>: <span class="code-string">"anId"</span>, <span class="code-string">"anotherdata"</span>: <span class="code-string">"another value"</span>}</code></pre>
+
+                <h3 id="rest">Representational State Transfer (REST)</h3>
+                <p>REST is an architectural style enforcing a client/server model. All communication must be <strong>stateless</strong> and <strong>cacheable</strong>. REST is focused on <strong>exposing data</strong>.</p>
+<pre><code><span class="code-comment">// REST calls</span>
+GET /someresources/anId
+PUT /someresources/anId
+{<span class="code-string">"anotherdata"</span>: <span class="code-string">"another value"</span>}</code></pre>
+
+                <h3>RPC vs REST Comparison</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Operation</th><th>RPC</th><th>REST</th></tr></thead>
+                        <tbody>
+                            <tr><td>Signup</td><td><code>POST /signup</code></td><td><code>POST /persons</code></td></tr>
+                            <tr><td>Read a person</td><td><code>GET /readPerson?personid=1234</code></td><td><code>GET /persons/1234</code></td></tr>
+                            <tr><td>Update item</td><td><code>POST /modifyItem {itemid: 456}</code></td><td><code>PUT /items/456 {key: "value"}</code></td></tr>
+                            <tr><td>Delete item</td><td><code>POST /removeItem {itemid: 456}</code></td><td><code>DELETE /items/456</code></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ==================== SECURITY ==================== -->
+            <section class="section" id="security">
+                <div class="section-header">
+                    <div class="section-icon red">🔐</div>
+                    <h2>Security</h2>
+                </div>
+                <p>Security is a broad topic. Unless you have considerable experience, you probably won't need to know more than the basics:</p>
+                <ul class="prose-list">
+                    <li><strong>Encrypt in transit and at rest</strong></li>
+                    <li><strong>Sanitize all user inputs</strong> to prevent <strong>XSS</strong> and <strong>SQL injection</strong></li>
+                    <li><strong>Use parameterized queries</strong> to prevent SQL injection</li>
+                    <li>Use the principle of <strong>least privilege</strong></li>
+                    <li><strong>Rate limiting</strong> — Prevent abuse by limiting requests per user</li>
+                </ul>
+
+                <h3>OAuth 1.0 vs OAuth 2.0</h3>
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-red">OAuth 1.0</span></h4>
+<pre><code>1. Generate nonce (random)
+2. Get timestamp
+3. Collect all parameters
+4. Sort alphabetically
+5. URL encode everything
+6. Create signature base string
+7. Calculate HMAC-SHA1
+8. Base64 encode signature
+9. Build OAuth header
+10. Add to HTTP request
+
+😵 10 steps, 150+ lines of code</code></pre>
+                    </div>
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-green">OAuth 2.0</span></h4>
+<pre><code>1. Add "Bearer token" to header
+2. Make HTTP request
+
+😊 2 steps, 10 lines of code</code></pre>
+                    </div>
+                </div>
+                <div class="diagram">
+                    <img src="images/Side-by-Side_Comparison.png" alt="OAuth Comparison" loading="lazy">
+                </div>
+
+                <div class="sources">
+                    <div class="sources-title">📚 Sources & Further Reading</div>
+                    <a href="https://github.com/shieldfy/API-Security-Checklist" target="_blank">API security checklist</a>
+                    <a href="https://github.com/FallibleInc/security-guide-for-developers" target="_blank">Security guide for developers</a>
+                    <a href="https://www.owasp.org/index.php/OWASP_Top_Ten_Cheat_Sheet" target="_blank">OWASP top ten</a>
+                </div>
+            </section>
+
+            <!-- ==================== APPENDIX ==================== -->
+            <section class="section" id="appendix">
+                <div class="section-header">
+                    <div class="section-icon indigo">📋</div>
+                    <h2>Appendix</h2>
+                </div>
+
+                <h3>Powers of Two Table</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Power</th><th>Exact Value</th><th>Approx</th><th>Bytes</th></tr></thead>
+                        <tbody>
+                            <tr><td>7</td><td>128</td><td></td><td></td></tr>
+                            <tr><td>8</td><td>256</td><td></td><td></td></tr>
+                            <tr><td>10</td><td>1,024</td><td>1 thousand</td><td>1 KB</td></tr>
+                            <tr><td>16</td><td>65,536</td><td></td><td>64 KB</td></tr>
+                            <tr><td>20</td><td>1,048,576</td><td>1 million</td><td>1 MB</td></tr>
+                            <tr><td>30</td><td>1,073,741,824</td><td>1 billion</td><td>1 GB</td></tr>
+                            <tr><td>32</td><td>4,294,967,296</td><td></td><td>4 GB</td></tr>
+                            <tr><td>40</td><td>1,099,511,627,776</td><td>1 trillion</td><td>1 TB</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Latency Numbers Every Programmer Should Know</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Operation</th><th>Latency</th><th>Comparison</th></tr></thead>
+                        <tbody>
+                            <tr><td>L1 cache reference</td><td><strong>0.5 ns</strong></td><td></td></tr>
+                            <tr><td>Branch mispredict</td><td><strong>5 ns</strong></td><td></td></tr>
+                            <tr><td>L2 cache reference</td><td><strong>7 ns</strong></td><td>14x L1 cache</td></tr>
+                            <tr><td>Mutex lock/unlock</td><td><strong>25 ns</strong></td><td></td></tr>
+                            <tr><td>Main memory reference</td><td><strong>100 ns</strong></td><td>20x L2, 200x L1</td></tr>
+                            <tr><td>Compress 1K with Zippy</td><td><strong>10,000 ns (10 μs)</strong></td><td></td></tr>
+                            <tr><td>Send 1 KB over 1 Gbps network</td><td><strong>10,000 ns (10 μs)</strong></td><td></td></tr>
+                            <tr><td>Read 4 KB randomly from SSD</td><td><strong>150,000 ns (150 μs)</strong></td><td>~1GB/sec SSD</td></tr>
+                            <tr><td>Read 1 MB sequentially from memory</td><td><strong>250,000 ns (250 μs)</strong></td><td></td></tr>
+                            <tr><td>Round trip within datacenter</td><td><strong>500,000 ns (500 μs)</strong></td><td></td></tr>
+                            <tr><td>Read 1 MB sequentially from SSD</td><td><strong>1,000,000 ns (1 ms)</strong></td><td>4X memory</td></tr>
+                            <tr><td>HDD seek</td><td><strong>10,000,000 ns (10 ms)</strong></td><td>20x datacenter RT</td></tr>
+                            <tr><td>Read 1 MB sequentially from HDD</td><td><strong>30,000,000 ns (30 ms)</strong></td><td>120x memory</td></tr>
+                            <tr><td>Send packet CA→Netherlands→CA</td><td><strong>150,000,000 ns (150 ms)</strong></td><td></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout callout-tip">
+                    <div class="callout-title">💡 Handy Metrics</div>
+                    <ul>
+                        <li>Read sequentially from HDD at <strong>30 MB/s</strong></li>
+                        <li>Read sequentially from 1 Gbps Ethernet at <strong>100 MB/s</strong></li>
+                        <li>Read sequentially from SSD at <strong>1 GB/s</strong></li>
+                        <li>Read sequentially from main memory at <strong>4 GB/s</strong></li>
+                        <li>6-7 world-wide round trips per second</li>
+                        <li>2,000 round trips per second within a data center</li>
+                    </ul>
+                </div>
+
+                <h3>Additional System Design Interview Questions</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Question</th><th>Reference</th></tr></thead>
+                        <tbody>
+                            <tr><td>Design a file sync service like Dropbox</td><td><a href="https://www.youtube.com/watch?v=PE4gwstWhmc" target="_blank" style="color: var(--accent-light)">YouTube</a></td></tr>
+                            <tr><td>Design a search engine like Google</td><td><a href="http://queue.acm.org/detail.cfm?id=988407" target="_blank" style="color: var(--accent-light)">ACM</a></td></tr>
+                            <tr><td>Design a key-value store like Redis</td><td><a href="http://www.slideshare.net/dvirsky/introduction-to-redis" target="_blank" style="color: var(--accent-light)">SlideShare</a></td></tr>
+                            <tr><td>Design a chat app like WhatsApp</td><td><a href="http://highscalability.com/blog/2014/2/26/the-whatsapp-architecture-facebook-bought-for-19-billion.html" target="_blank" style="color: var(--accent-light)">High Scalability</a></td></tr>
+                            <tr><td>Design a picture sharing system like Instagram</td><td><a href="http://highscalability.com/blog/2011/12/6/instagram-architecture-14-million-users-terabytes-of-photos.html" target="_blank" style="color: var(--accent-light)">High Scalability</a></td></tr>
+                            <tr><td>Design the Facebook news feed</td><td><a href="http://www.quora.com/What-are-best-practices-for-building-something-like-a-News-Feed" target="_blank" style="color: var(--accent-light)">Quora</a></td></tr>
+                            <tr><td>Design an API rate limiter</td><td><a href="https://stripe.com/blog/rate-limiters" target="_blank" style="color: var(--accent-light)">Stripe</a></td></tr>
+                            <tr><td>Design a Stock Exchange</td><td><a href="https://youtu.be/b1e4t2k2KJY" target="_blank" style="color: var(--accent-light)">Jane Street</a></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ==================== STATELESS VS STATEFUL ==================== -->
+            <section class="section" id="stateless-stateful">
+                <div class="section-header">
+                    <div class="section-icon blue">🔁</div>
+                    <h2>Stateless vs Stateful</h2>
+                </div>
+                <div class="diagram">
+                    <img src="images/Stateful.png" alt="Stateless vs Stateful" loading="lazy">
+                </div>
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-green">Stateless</span></h4>
+                        <p>Uses a database to store <strong>persistent data</strong> but does NOT store client-specific state between requests. Each request contains all info needed. <strong>Easier to scale horizontally</strong> — any server can handle any request.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-yellow">Stateful</span></h4>
+                        <p>Stores <strong>client-specific state</strong> (e.g., session data, shopping cart) between requests. Harder to scale because sessions are tied to specific servers — requires sticky sessions or external session store.</p>
+                    </div>
+                </div>
+                <div class="callout callout-tip">
+                    <div class="callout-title">💡 Best Practice</div>
+                    <p>Design <strong>stateless services</strong> whenever possible. Store sessions in a centralized store (Redis, database) rather than on individual servers.</p>
+                </div>
+            </section>
+
+            <!-- ==================== LOAD BALANCING ALGORITHMS ==================== -->
+            <section class="section" id="lb-algorithms">
+                <div class="section-header">
+                    <div class="section-icon indigo">⚖️</div>
+                    <h2>Load Balancing Algorithms</h2>
+                </div>
+
+                <h3>Round Robin</h3>
+                <p>Cycles through servers in order. Request 1 → Server 1, Request 2 → Server 2, then back to Server 1. Simple and effective when servers have similar specs.</p>
+
+                <h3>Weighted Round Robin</h3>
+                <p>Like Round Robin but assigns <strong>weights</strong> based on server capacity. If Server 1 is 5× more powerful, it gets a weight of 5 and receives 5× more requests than Server 2 (weight 1).</p>
+                <div class="diagram">
+                    <img src="images/load_balancer.png" alt="Weighted Round Robin" loading="lazy">
+                </div>
+
+                <h3>Least Connections</h3>
+                <p>Routes to the server with the <strong>fewest active connections</strong>. Best when connections have varying durations — prevents pile-up on one server.</p>
+                <div class="diagram">
+                    <img src="images/Pasted_Graphic_3%201.png" alt="Least Connections" loading="lazy">
+                </div>
+
+                <h3>Weighted Least Connections</h3>
+                <p>Combines server <strong>weights</strong> with active <strong>connection counts</strong>. More powerful servers get proportionally more connections even when using least-connection logic.</p>
+
+                <h3>Random</h3>
+                <p>Distributes requests randomly using an underlying random number generator. With many requests, distribution becomes roughly even. Sufficient for clusters with similar server configurations.</p>
+            </section>
+
+            <!-- ==================== CONSUL ==================== -->
+            <section class="section" id="consul">
+                <div class="section-header">
+                    <div class="section-icon green">🔍</div>
+                    <h2>Consul — Service Networking</h2>
+                </div>
+                <p>Consul is a service networking tool — a combination of a <strong>phone book</strong> and <strong>health monitor</strong> for your services. When you have multiple services running across different servers, Consul helps them discover each other.</p>
+
+                <h3>Key Features</h3>
+                <ul class="prose-list">
+                    <li><strong>Service Discovery</strong> — Services register themselves; others query Consul to find them</li>
+                    <li><strong>Health Checking</strong> — Continuously monitors; auto-stops routing to failed services</li>
+                    <li><strong>Key-Value Store</strong> — Distributed configuration storage</li>
+                    <li><strong>Service Mesh</strong> — Secure service-to-service communication with mTLS</li>
+                    <li><strong>Multi-Datacenter</strong> — Works across datacenters out of the box</li>
+                </ul>
+
+                <h3>How It Works</h3>
+<pre><code>Registration Phase:
+  Payment Service A (:8080) ─┐
+  Payment Service B (:8080) ─┤ Register with Consul
+                              ▼
+                        ┌──────────┐
+                        │  CONSUL  │
+                        │  Server  │
+                        └──────────┘
+                              │
+                   [Service Catalog Stored]
+
+Discovery Phase:
+  Web App ──grpc.Dial("consul://.../payment-service")──► Consul
+       ◄── Returns healthy instances ──
+
+Failure Scenario:
+  Service A crashes → Health check fails → Consul marks unhealthy
+  → Resolver auto-updates → All traffic goes to Service B ✓</code></pre>
+            </section>
+
+            <!-- ==================== DATABASE KEYS ==================== -->
+            <section class="section" id="db-keys">
+                <div class="section-header">
+                    <div class="section-icon yellow">🔑</div>
+                    <h2>Database Keys</h2>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Key Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Super Key</strong></td><td>A set of columns that uniquely identifies rows in a table</td></tr>
+                            <tr><td><strong>Candidate Key</strong></td><td>Minimal super key — attributes that uniquely identify rows. Primary Key is selected from these.</td></tr>
+                            <tr><td><strong>Primary Key</strong></td><td>The chosen candidate key that uniquely identifies every row</td></tr>
+                            <tr><td><strong>Alternate Key</strong></td><td>Candidate keys that were NOT chosen as the primary key</td></tr>
+                            <tr><td><strong>Foreign Key</strong></td><td>Column creating a relationship between two tables; maintains data integrity</td></tr>
+                            <tr><td><strong>Compound Key</strong></td><td>2+ attributes that together uniquely identify a record (each may not be unique alone)</td></tr>
+                            <tr><td><strong>Composite Key</strong></td><td>Combination of 2+ columns that uniquely identify rows</td></tr>
+                            <tr><td><strong>Surrogate Key</strong></td><td>Artificial key (e.g., auto-increment ID) created when no natural primary key exists</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ==================== PARTITIONING ==================== -->
+            <section class="section" id="partitioning">
+                <div class="section-header">
+                    <div class="section-icon purple">📊</div>
+                    <h2>Database Partitioning</h2>
+                </div>
+                <div class="diagram">
+                    <img src="images/Without_partitioning.png" alt="Partitioning" loading="lazy">
+                </div>
+                <p>Partitioning divides a big table into smaller pieces while <strong>logically treating them as one table</strong>. Unlike sharding, all partitions live on the <strong>same server</strong>.</p>
+
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4>Horizontal Partitioning</h4>
+                        <p>Split by <strong>rows</strong> — e.g., 2023 orders vs 2024 orders in separate partitions.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h4>Vertical Partitioning</h4>
+                        <p>Split by <strong>columns</strong> — e.g., user profile vs user preferences in separate tables.</p>
+                    </div>
+                </div>
+
+                <h3>Partition Pruning</h3>
+                <p>The database <strong>skips partitions</strong> that don't contain relevant data, making queries dramatically faster.</p>
+<pre><code>Floor 1: Books A-F
+Floor 2: Books G-M
+Floor 3: Books N-S
+Floor 4: Books T-Z
+
+You want "Python" (starts with P)
+WITHOUT Pruning: Search all 4 floors ❌
+WITH Pruning:    Only search Floor 3 ✅ (4× faster!)</code></pre>
+
+                <h3>PostgreSQL Example</h3>
+<pre><code><span class="code-keyword">CREATE TABLE</span> orders (
+    id SERIAL,
+    customer_id INT,
+    order_date DATE,
+    total INT
+) <span class="code-keyword">PARTITION BY RANGE</span> (order_date);
+
+<span class="code-keyword">CREATE TABLE</span> orders_2021 <span class="code-keyword">PARTITION OF</span> orders
+    <span class="code-keyword">FOR VALUES FROM</span> (<span class="code-string">'2021-01-01'</span>) <span class="code-keyword">TO</span> (<span class="code-string">'2022-01-01'</span>);
+
+<span class="code-keyword">CREATE TABLE</span> orders_2022 <span class="code-keyword">PARTITION OF</span> orders
+    <span class="code-keyword">FOR VALUES FROM</span> (<span class="code-string">'2022-01-01'</span>) <span class="code-keyword">TO</span> (<span class="code-string">'2023-01-01'</span>);</code></pre>
+            </section>
+
+            <!-- ==================== POSTGRESQL INDEXES ==================== -->
+            <section class="section" id="pg-indexes">
+                <div class="section-header">
+                    <div class="section-icon green">📇</div>
+                    <h2>PostgreSQL Index Types</h2>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Type</th><th>Use Case</th><th>Operators</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>B-tree</strong> <span class="pill pill-green">default</span></td><td>General purpose, ordered data</td><td><code>&lt;= = &gt;= BETWEEN IN IS NULL LIKE</code></td></tr>
+                            <tr><td><strong>Hash</strong></td><td>Equality comparisons only</td><td><code>=</code></td></tr>
+                            <tr><td><strong>GIN</strong></td><td>array, jsonb, full-text (tsvector)</td><td>Contains, match</td></tr>
+                            <tr><td><strong>GiST</strong></td><td>Geometric data, full-text</td><td>Overlap, contains</td></tr>
+                            <tr><td><strong>BRIN</strong></td><td>Linear sort order (e.g., created_date)</td><td>Range queries</td></tr>
+                            <tr><td><strong>SP-GiST</strong></td><td>Naturally clustered data (GIS, IP routing)</td><td>Non-balanced trees</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Full-Text Search on VARCHAR</h3>
+                <p>GIN/GiST can't be applied directly to plain VARCHAR. Use a <strong>functional index</strong>:</p>
+<pre><code><span class="code-comment">-- ❌ Doesn't work on VARCHAR directly:</span>
+<span class="code-keyword">CREATE INDEX</span> idx_content <span class="code-keyword">ON</span> articles <span class="code-keyword">USING</span> GIN(content);
+
+<span class="code-comment">-- ✅ Convert VARCHAR → tsvector:</span>
+<span class="code-keyword">CREATE INDEX</span> idx_content_search <span class="code-keyword">ON</span> articles
+<span class="code-keyword">USING</span> GIN(to_tsvector(<span class="code-string">'english'</span>, content));
+
+<span class="code-comment">-- Now search:</span>
+<span class="code-keyword">SELECT</span> * <span class="code-keyword">FROM</span> articles
+<span class="code-keyword">WHERE</span> to_tsvector(<span class="code-string">'english'</span>, content) @@ to_tsquery(<span class="code-string">'postgresql'</span>);</code></pre>
+            </section>
+
+            <!-- ==================== ISOLATION LEVELS ==================== -->
+            <section class="section" id="isolation-levels">
+                <div class="section-header">
+                    <div class="section-icon purple">🔒</div>
+                    <h2>Transaction Isolation Levels</h2>
+                </div>
+                <p>Isolation levels control how transactions interact with each other. Higher isolation = more consistency but less concurrency.</p>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Level</th><th>Dirty Read</th><th>Non-Repeatable</th><th>Phantom</th><th>Notes</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Read Uncommitted</strong></td><td>✅ Yes</td><td>✅ Yes</td><td>✅ Yes</td><td>Can see uncommitted data</td></tr>
+                            <tr><td><strong>Read Committed</strong> <span class="pill pill-green">PG default</span></td><td>❌ No</td><td>✅ Yes</td><td>✅ Yes</td><td>Only committed data visible</td></tr>
+                            <tr><td><strong>Repeatable Read</strong></td><td>❌ No</td><td>❌ No</td><td>✅ Yes</td><td>Same snapshot throughout transaction</td></tr>
+                            <tr><td><strong>Serializable</strong></td><td>❌ No</td><td>❌ No</td><td>❌ No</td><td>Complete isolation; uses SSI</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout callout-info">
+                    <div class="callout-title">💡 PostgreSQL SSI</div>
+                    <p>PostgreSQL's Serializable level uses <strong>Serializable Snapshot Isolation (SSI)</strong> — an optimistic approach. No locking during execution; conflicts detected at commit time. If a conflict is found, the transaction is aborted.</p>
+                </div>
+            </section>
+
+            <!-- ==================== READ PHENOMENA ==================== -->
+            <section class="section" id="read-phenomena">
+                <div class="section-header">
+                    <div class="section-icon red">👁️</div>
+                    <h2>Read Phenomena</h2>
+                </div>
+
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-red">Dirty Read</span></h4>
+                        <p>Transaction A reads <strong>uncommitted</strong> data from Transaction B. If B rolls back, A read data that never existed.</p>
+<pre><code>T2: UPDATE balance=5000 (not committed)
+T3: READ balance=5000 ← dirty!
+T4: ROLLBACK ← oops!</code></pre>
+                    </div>
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-yellow">Non-Repeatable Read</span></h4>
+                        <p>Transaction A reads same row twice, gets <strong>different values</strong> because B committed an UPDATE between reads.</p>
+<pre><code>T2: SELECT balance → $1000
+T3: UPDATE + COMMIT → $2000
+T5: SELECT balance → $2000 (changed!)</code></pre>
+                    </div>
+                </div>
+                <div class="comparison-grid" style="max-width:50%">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-purple">Phantom Read</span></h4>
+                        <p>Transaction A runs same query twice, gets <strong>different rows</strong> because B INSERTed new rows.</p>
+<pre><code>T2: SELECT WHERE balance>10000 → 5 rows
+T3: INSERT + COMMIT new row
+T5: SELECT WHERE balance>10000 → 6 rows</code></pre>
+                    </div>
+                </div>
+                <div class="callout callout-tip">
+                    <div class="callout-title">💡 Simple Rule</div>
+                    <p><strong>Non-Repeatable Read</strong> → caused by UPDATE (same row, value changes)</p>
+                    <p><strong>Phantom Read</strong> → caused by INSERT (new rows appear or disappear)</p>
+                </div>
+            </section>
+
+            <!-- ==================== MVCC ==================== -->
+            <section class="section" id="mvcc">
+                <div class="section-header">
+                    <div class="section-icon blue">📄</div>
+                    <h2>MVCC — Multi-Version Concurrency Control</h2>
+                </div>
+                <p>MVCC allows transactions to access <strong>different versions</strong> of the same row depending on when they started — <strong>without locking</strong>.</p>
+
+                <h3>How It Works</h3>
+                <ul class="prose-list">
+                    <li>Initial state: <code>Row: id=1, status='pending'</code></li>
+                    <li><strong>Transaction A</strong> starts at T0, reads the row</li>
+                    <li><strong>Transaction B</strong> updates to <code>status='shipped'</code> and commits at T1</li>
+                    <li><strong>Transaction A</strong> reads the row again — sees the <strong>old version</strong> ('pending') because MVCC keeps both versions until A finishes</li>
+                </ul>
+            </section>
+
+            <!-- ==================== CONNECTION POOLING ==================== -->
+            <section class="section" id="connection-pooling">
+                <div class="section-header">
+                    <div class="section-icon yellow">🔗</div>
+                    <h2>Connection Pooling</h2>
+                </div>
+                <p>A strategy to keep database connections <strong>open and reusable</strong> instead of creating new connections for every request. The application requests a connection from the pool, uses it, then returns it.</p>
+                <div class="callout callout-tip">
+                    <div class="callout-title">✅ Benefits</div>
+                    <ul>
+                        <li>Reduces connection overhead (TCP handshake, SSL, authentication)</li>
+                        <li>Limits total connections to prevent database overload</li>
+                        <li>Improves response time for subsequent requests</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- ==================== GRPC VS WEBSOCKET ==================== -->
+            <section class="section" id="grpc-vs-websocket">
+                <div class="section-header">
+                    <div class="section-icon purple">⚡</div>
+                    <h2>gRPC vs WebSocket</h2>
+                </div>
+
+                <h3>Why gRPC is Faster than HTTP</h3>
+                <ul class="prose-list">
+                    <li>Data is transmitted via <strong>Protobuf</strong> — compressed to smaller binary size, serialized/deserialized faster</li>
+                    <li>gRPC uses <strong>HTTP/2</strong> instead of HTTP/1.1 — supports multiplexing, header compression, server push</li>
+                </ul>
+                <div class="diagram">
+                    <img src="images/1._Multiplexing_HTTP2_allows_multiple_requests.png" alt="HTTP/2 Multiplexing" loading="lazy">
+                </div>
+
+                <h3>Quick Comparison</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Aspect</th><th>WebSocket</th><th>gRPC (HTTP/2)</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Protocol</strong></td><td>WebSocket over HTTP/1.1</td><td>HTTP/2</td></tr>
+                            <tr><td><strong>Multiplexing</strong></td><td>❌ No</td><td>✅ Yes (multiple streams)</td></tr>
+                            <tr><td><strong>Head-of-line Blocking</strong></td><td>❌ Yes</td><td>✅ No</td></tr>
+                            <tr><td><strong>Message Flow</strong></td><td>Sequential on wire</td><td>Concurrent (interleaved)</td></tr>
+                            <tr><td><strong>Load Balancing</strong></td><td>✅ Works with L4</td><td>⚠️ Needs L7 or client-side</td></tr>
+                            <tr><td><strong>Best For</strong></td><td>Real-time bidirectional (chat)</td><td>Microservice-to-microservice</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>When to Use Which</h3>
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-blue">WebSocket</span></h4>
+                        <ul>
+                            <li>Real-time bidirectional communication</li>
+                            <li>Server needs to push updates</li>
+                            <li>Chat, notifications, live feeds</li>
+                            <li>1:1 client-server relationship</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-purple">gRPC</span></h4>
+                        <ul>
+                            <li>Microservice-to-microservice</li>
+                            <li>High-throughput request-response</li>
+                            <li>Concurrent request multiplexing</li>
+                            <li>Binary protocol efficiency</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="callout callout-info">
+                    <div class="callout-title">💡 Use Both</div>
+<pre><code>Browser ──[WebSocket]──► API Gateway ──[gRPC]──► Microservices
+
+Frontend: WebSocket for real-time updates
+Backend:  gRPC for efficient service communication</code></pre>
+                </div>
+            </section>
+
+            <!-- ==================== MQTT VS MESSAGE BROKER ==================== -->
+            <section class="section" id="mqtt-vs-broker">
+                <div class="section-header">
+                    <div class="section-icon blue">📡</div>
+                    <h2>MQTT vs Message Broker</h2>
+                </div>
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-green">MQTT</span> For IoT / Vehicle → Backend</h4>
+                        <ul>
+                            <li>Extremely lightweight (2-byte header)</li>
+                            <li>Battery-efficient — critical for GPS devices</li>
+                            <li>Built-in reconnection for unreliable networks</li>
+                            <li>QoS levels for delivery guarantees</li>
+                            <li>Topic-based routing: <code>/fleet/vehicle/{id}/location</code></li>
+                        </ul>
+                    </div>
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-purple">RabbitMQ/Kafka</span> Backend Services</h4>
+                        <ul>
+                            <li>Complex routing, message persistence</li>
+                            <li>High throughput — millions of messages</li>
+                            <li>Enterprise integration, dead-letter queues</li>
+                            <li>Transaction support</li>
+                            <li>Microservice communication</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Why Not RabbitMQ for Everything?</div>
+                    <ul>
+                        <li>❌ Too heavy for embedded GPS devices</li>
+                        <li>❌ More bandwidth (expensive on cellular)</li>
+                        <li>❌ Battery drain on vehicle trackers</li>
+                        <li>❌ Not designed for thousands of persistent device connections</li>
+                    </ul>
+                </div>
+                <div class="callout callout-info">
+                    <div class="callout-title">💡 Real-World Architecture</div>
+<pre><code>Vehicle ──[MQTT]──► Backend ──[RabbitMQ]──► Other Services
+
+Tesla: MQTT for vehicle telemetry
+Uber/Lyft: MQTT for driver location tracking</code></pre>
+                </div>
+            </section>
+
+            <!-- ==================== RACE CONDITION ==================== -->
+            <section class="section" id="race-condition">
+                <div class="section-header">
+                    <div class="section-icon red">🔒</div>
+                    <h2>Race Condition & Concurrency</h2>
+                </div>
+
+                <h3>Database Locking</h3>
+                <p>Mechanism to prevent concurrent access conflicts in databases. Locks ensure data consistency when multiple transactions try to modify the same data.</p>
+
+                <h3>Mutex</h3>
+                <p>A locking mechanism ensuring <strong>only one thread</strong> can access a shared resource at a time.</p>
+                <ul class="prose-list">
+                    <li><strong>Lock/acquire</strong>: If unlocked, lock and proceed. If locked, block until available.</li>
+                    <li><strong>Unlock/release</strong>: Release so others can acquire.</li>
+                </ul>
+                <div class="diagram">
+                    <img src="images/3_usages.png" alt="Mutex Usage" loading="lazy">
+                </div>
+
+                <h3>Semaphore</h3>
+                <p>A synchronization mechanism to control access to shared resources with a <strong>counter</strong>.</p>
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-blue">Binary Semaphore</span> (= Mutex)</h4>
+                        <p>Counter is 0 or 1 — allows only <strong>one thread</strong> at a time. Used for mutual exclusion.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-green">Counting Semaphore</span></h4>
+                        <p>Counter can be N — allows <strong>N threads</strong> simultaneous access. Useful for limiting access to a resource pool (DB connections, thread pools).</p>
+                    </div>
+                </div>
+                <div class="diagram">
+                    <img src="images/semaphore(weight_int64).png" alt="Semaphore" loading="lazy">
+                </div>
+            </section>
+
+            <!-- ==================== S.O.L.I.D ==================== -->
+            <section class="section" id="solid">
+                <div class="section-header">
+                    <div class="section-icon indigo">📐</div>
+                    <h2>S.O.L.I.D Principles</h2>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Letter</th><th>Principle</th><th>Key Idea</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>S</strong></td><td>Single Responsibility</td><td>A class should have one, and only one, reason to change</td></tr>
+                            <tr><td><strong>O</strong></td><td>Open/Closed</td><td>Open for extension, closed for modification</td></tr>
+                            <tr><td><strong>L</strong></td><td>Liskov Substitution</td><td>Subtypes must be substitutable for their base types</td></tr>
+                            <tr><td><strong>I</strong></td><td>Interface Segregation</td><td>Many specific interfaces are better than one general interface</td></tr>
+                            <tr><td><strong>D</strong></td><td>Dependency Inversion</td><td>Depend on abstractions, not concretions</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ==================== DESIGN PATTERNS ==================== -->
+            <section class="section" id="design-patterns">
+                <div class="section-header">
+                    <div class="section-icon yellow">🧩</div>
+                    <h2>Design Patterns</h2>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Pattern</th><th>Purpose</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Singleton</strong></td><td>Ensures a class has only <strong>one instance</strong> with global access</td></tr>
+                            <tr><td><strong>Adapter</strong></td><td>Converts the interface of one class into another (assembler pattern)</td></tr>
+                            <tr><td><strong>Factory Method</strong></td><td>Interface for creating objects in a superclass; subclasses alter the type of objects created</td></tr>
+                            <tr><td><strong>Bridge</strong></td><td>Splits a large class into two hierarchies (abstraction + implementation) that can develop independently</td></tr>
+                            <tr><td><strong>Builder</strong></td><td>Construct complex objects <strong>step by step</strong>; same code for different representations</td></tr>
+                            <tr><td><strong>Prototype</strong></td><td>Copy existing objects without making code dependent on their classes</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ==================== ELK STACK ==================== -->
+            <section class="section" id="elk-stack">
+                <div class="section-header">
+                    <div class="section-icon green">📊</div>
+                    <h2>ELK Stack</h2>
+                </div>
+                <p>A powerful log management and analytics platform consisting of three open-source projects:</p>
+                <div class="avail-grid">
+                    <div class="avail-card">
+                        <div class="num" style="font-size:20px">Logstash</div>
+                        <div class="label">Log Aggregator</div>
+                        <div class="detail">Collects logs from various sources, transforms, and outputs as JSON</div>
+                    </div>
+                    <div class="avail-card">
+                        <div class="num" style="font-size:20px">Elasticsearch</div>
+                        <div class="label">Search & Storage</div>
+                        <div class="detail">Indexed log storage engine with powerful full-text search</div>
+                    </div>
+                    <div class="avail-card">
+                        <div class="num" style="font-size:20px">Kibana</div>
+                        <div class="label">Visualization</div>
+                        <div class="detail">Dashboard for visualizing logs, creating charts and monitoring</div>
+                    </div>
+                </div>
+                <div class="callout callout-info">
+                    <div class="callout-title">💡 + Beats</div>
+                    <p><strong>Beats</strong> are lightweight shipping agents that forward logs into Elasticsearch — often deployed alongside the ELK stack.</p>
+                </div>
+            </section>
+
+            <!-- ==================== SYSTEM DESIGN INTERVIEW ==================== -->
+            <section class="section" id="system-design-interview">
+                <div class="section-header">
+                    <div class="section-icon red">🎯</div>
+                    <h2>System Design Interview Guide</h2>
+                </div>
+
+                <h3>1. Understand the Requirements</h3>
+                <ul class="prose-list">
+                    <li><strong>Clarify the problem</strong> — "Is this read-heavy or write-heavy?" "What's the expected scale?"</li>
+                    <li><strong>Functional requirements</strong> — What features? (auth, posting, search, etc.)</li>
+                    <li><strong>Non-functional requirements</strong> — Scalability, reliability, latency, consistency</li>
+                </ul>
+                <div class="diagram">
+                    <img src="images/Read-Heavy_System_(90_reads).png" alt="Read vs Write Heavy" loading="lazy">
+                </div>
+                <div class="diagram">
+                    <img src="images/Simple_Rule_of_Thumb.png" alt="Simple Rule of Thumb" loading="lazy">
+                </div>
+
+                <h3>2. Estimate the Scale</h3>
+                <ul class="prose-list">
+                    <li><strong>Traffic</strong> — Requests per second (RPS), DAU</li>
+                    <li><strong>Storage</strong> — How much data? (e.g., 1 TB user data, 10 GB logs/day)</li>
+                    <li><strong>Bandwidth</strong> — Data transferred in/out</li>
+                </ul>
+
+                <h3>3. High-Level Design</h3>
+                <ul class="prose-list">
+                    <li><strong>Architecture diagram</strong> — Clients, servers, databases, caches, load balancers, CDNs</li>
+                    <li><strong>API design</strong> — Endpoints and request/response structures</li>
+                    <li><strong>Data flow</strong> — Client → LB → Web Server → Database. REST/gRPC/GraphQL?</li>
+                </ul>
+
+                <h3>4. Deep Dive into Key Components</h3>
+                <ul class="prose-list">
+                    <li><strong>Database</strong> — SQL vs NoSQL, schema, indexing, partitioning, replication, sharding</li>
+                    <li><strong>Caching</strong> — Redis/Memcached to reduce DB load</li>
+                    <li><strong>Load balancing</strong> — NGINX, AWS ELB, algorithms</li>
+                    <li><strong>Architecture</strong> — Microservices vs Monolith trade-off</li>
+                </ul>
+
+                <h3>5. Scalability</h3>
+                <ul class="prose-list">
+                    <li><strong>Horizontal vs Vertical</strong> scaling trade-offs</li>
+                    <li><strong>Database scaling</strong> — Replication, sharding, partitioning</li>
+                    <li><strong>Stateless services</strong> — Design for easy horizontal scaling</li>
+                </ul>
+
+                <h3>6. Availability</h3>
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-green">Active-Active</span></h4>
+                        <p>All servers handle traffic simultaneously. If one fails → traffic to others. No idle servers.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h4><span class="pill pill-yellow">Active-Passive</span></h4>
+                        <p>Primary handles all traffic; backup is idle. If primary fails → backup takes over (minutes to hours).</p>
+                    </div>
+                </div>
+
+                <h3>7. Performance & Security</h3>
+                <ul class="prose-list">
+                    <li><strong>Caching</strong> — In-memory (Redis) for frequently accessed data</li>
+                    <li><strong>CDN</strong> — Static assets served closer to users</li>
+                    <li><strong>Async processing</strong> — Message queues (Kafka, RabbitMQ) for background tasks</li>
+                    <li><strong>Auth</strong> — OAuth 2.0, JWT, role-based access control</li>
+                    <li><strong>Encryption</strong> — TLS/SSL for transit, encryption at rest</li>
+                    <li><strong>Rate limiting</strong> — Prevent abuse</li>
+                </ul>
+
+                <h3>8. Monitoring & Trade-offs</h3>
+                <ul class="prose-list">
+                    <li><strong>Monitoring</strong> — Prometheus, Grafana, CloudWatch</li>
+                    <li><strong>Logging</strong> — Centralized (ELK Stack)</li>
+                    <li><strong>Explain trade-offs</strong> — Consistency vs availability, latency vs cost</li>
+                    <li><strong>Justify choices</strong> — Why this tech/approach over alternatives?</li>
+                </ul>
+            </section>
+
+            <!-- ==================== PERCENTILE ==================== -->
+            <section class="section" id="percentile">
+                <div class="section-header">
+                    <div class="section-icon blue">📈</div>
+                    <h2>Percentiles in Load Testing</h2>
+                </div>
+                <p>Percentiles show how response times are distributed across <strong>ALL users</strong>, not just the average. They are <strong>more reliable</strong> than averages for understanding user experience.</p>
+
+                <div class="callout callout-warning">
+                    <div class="callout-title">⚠️ Average is Misleading</div>
+<pre><code>9 users at 100ms, 1 user at 5000ms:
+
+Average = 590ms  ← Looks terrible!
+p50    = 100ms   ← Most users happy!
+p90    = 100ms   ← 90% under 100ms
+p99    = 5000ms  ← Worst case for 1%</code></pre>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Metric</th><th>What It Shows</th><th>Calculation</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Average</strong></td><td>Sum ÷ count (skewed by outliers)</td><td><code>(all values) / count</code></td></tr>
+                            <tr><td><strong>p50</strong> (median)</td><td>What MOST users experience</td><td>Middle value when sorted</td></tr>
+                            <tr><td><strong>p95</strong></td><td>95% of users get this or better</td><td>95th position in sorted list</td></tr>
+                            <tr><td><strong>p99</strong></td><td>Worst case for 1% of users</td><td>99th position in sorted list</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout callout-tip">
+                    <div class="callout-title">💡 Best Practice</div>
+<pre><code>Your boss: "What's the API performance?"
+
+❌ Bad:  "Average is 200ms" (hides 10% with 5-second delays!)
+✅ Good: "p50 is 150ms, p95 is 500ms, p99 is 2s" (full picture)</code></pre>
+                </div>
+            </section>
+
+            <!-- ==================== FAIL-OVER TYPES ENHANCEMENT ==================== -->
+
+            <!-- FOOTER -->
+            <div class="footer">
+                <p>Based on <a href="https://github.com/donnemartin/system-design-primer" target="_blank">The System Design Primer</a> by Donne Martin &amp; personal Engineering Notes</p>
+                <p style="margin-top:4px">Licensed under Creative Commons Attribution 4.0 International</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ===== SIDEBAR TOGGLE =====
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        // ===== NAV TOGGLE (expand/collapse children) =====
+        function toggleNav(el) {
+            const targetId = el.getAttribute('data-toggle');
+            const children = document.getElementById(targetId);
+            if (children) {
+                children.classList.toggle('open');
+                el.classList.toggle('expanded');
+            }
+        }
+
+        // ===== NAV CLICK =====
+        function navClick(el) {
+            const targetId = el.getAttribute('data-target');
+            const target = document.getElementById(targetId);
+
+            // Update active state
+            document.querySelectorAll('.nav-item, .nav-child').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+
+            // Close mobile sidebar
+            if (window.innerWidth <= 900) {
+                toggleSidebar();
+            }
+
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // ===== SCROLL SPY =====
+        function updateScrollSpy() {
+            const sections = document.querySelectorAll('section[id]');
+            let current = '';
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 120;
+                if (window.scrollY >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            // Also check h3/h4 ids
+            const subSections = document.querySelectorAll('[id]');
+            subSections.forEach(el => {
+                if (el.tagName === 'H3' || el.tagName === 'H4') {
+                    const elTop = el.offsetTop - 120;
+                    if (window.scrollY >= elTop) {
+                        current = el.getAttribute('id');
+                    }
+                }
+            });
+
+            document.querySelectorAll('.nav-item, .nav-child').forEach(navEl => {
+                navEl.classList.remove('active');
+                if (navEl.getAttribute('data-target') === current) {
+                    navEl.classList.add('active');
+                    // Expand parent if needed
+                    const parent = navEl.closest('.nav-children');
+                    if (parent && !parent.classList.contains('open')) {
+                        parent.classList.add('open');
+                        const toggleEl = document.querySelector(`[data-toggle="${parent.id}"]`);
+                        if (toggleEl) toggleEl.classList.add('expanded');
+                    }
+                }
+            });
+        }
+
+        window.addEventListener('scroll', updateScrollSpy);
+        updateScrollSpy();
+
+        // ===== SEARCH =====
+        function handleSearch(query) {
+            query = query.toLowerCase().trim();
+            const navItems = document.querySelectorAll('.nav-item, .nav-child');
+
+            if (!query) {
+                navItems.forEach(el => {
+                    el.style.display = '';
+                });
+                document.querySelectorAll('.nav-children').forEach(el => {
+                    el.classList.remove('open');
+                });
+                document.querySelectorAll('.nav-item[data-toggle]').forEach(el => {
+                    el.classList.remove('expanded');
+                });
+                return;
+            }
+
+            navItems.forEach(el => {
+                const text = el.textContent.toLowerCase();
+                if (text.includes(query)) {
+                    el.style.display = '';
+                    const parent = el.closest('.nav-children');
+                    if (parent) {
+                        parent.classList.add('open');
+                        const toggleEl = document.querySelector(`[data-toggle="${parent.id}"]`);
+                        if (toggleEl) {
+                            toggleEl.style.display = '';
+                            toggleEl.classList.add('expanded');
+                        }
+                    }
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+        }
+
+        // ===== KEYBOARD SHORTCUT =====
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+            }
+        });
+    </script>
+</body>
+</html>
